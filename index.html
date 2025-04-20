@@ -82,6 +82,11 @@
             background: rgba(255, 215, 0, 0.1);
             border: 1px solid rgba(255, 215, 0, 0.3);
         }
+
+        .timerPanel {
+            background: rgba(0, 123, 255, 0.1);
+            border: 1px solid rgba(0, 123, 255, 0.3);
+        }
         
         #controlsPanel {
             position: absolute;
@@ -138,7 +143,7 @@
         
         #settingsPanel {
             position: absolute;
-            top: 80px;
+            top: 60px;
             right: 20px;
             width: 300px;
             background: rgba(0, 0, 0, 0.8);
@@ -149,6 +154,7 @@
             display: none;
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            z-index:20px;
         }
         
         #settingsPanel.active {
@@ -348,7 +354,6 @@
             right: 80px;
         }
         
-        /* Mobile-specific styles */
         @media (max-width: 768px) {
             #instructions {
                 font-size: 12px;
@@ -365,15 +370,31 @@
             }
             
             #settingsPanel {
-                width: 280px;
-                left: 20px;
-                top: 120px;
+                width: 260px;
+                right: 20px;
+                left: auto;
+                top: 80px;
+                max-height: 60vh;
+                overflow-y: auto;
+                padding: 12px;
             }
             
             .iconButton {
                 width: 40px;
                 height: 40px;
                 font-size: 16px;
+            }
+        
+            /* Added for better mobile spacing */
+            #scoreBoard {
+                gap: 20px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .timerPanel {
+                order: 1; /* Move timer to bottom row */
+                margin-top: 10px;
             }
         }
     </style>
@@ -398,6 +419,10 @@
                 <div class="scorePanel highScorePanel">
                     <div class="playerName">HIGH SCORE</div>
                     <div class="score" id="highScore">0</div>
+                </div>
+                <div class="scorePanel timerPanel" id="timerPanel" style="display: none;">
+                    <div class="playerName">TIME LEFT</div>
+                    <div class="score" id="timerDisplay">120</div>
                 </div>
             </div>
             
@@ -431,17 +456,17 @@
                 
                 <div class="settingRow">
                     <label for="sensitivitySlider">Paddle Sensitivity</label>
-                    <input type="range" id="sensitivitySlider" min="10" max="50" value="25" step="1">
+                    <input type="range" id="sensitivitySlider" min="25" max="50" value="25" step="1">
                     <div class="settingValue" id="sensitivityValue">Normal (25)</div>
                 </div>
                 
                 <div class="settingRow">
                     <label for="difficultySelect">Computer Difficulty</label>
                     <select id="difficultySelect">
-                        <option value="easy">Easy</option>
-                        <option value="medium" selected>Medium</option>
-                        <option value="hard">Hard</option>
-                        <option value="expert">Expert</option>
+                        <option value="easy" selected>Easy (Casual - Great for beginners)</option>
+                        <option value="medium" >Medium (Normal - Balanced challenge)</option>
+                        <option value="hard">Hard (Tough - For experienced players)</option>
+                        <option value="expert">Expert (Brutal - Tournament level)</option>
                     </select>
                 </div>
                 
@@ -501,7 +526,6 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // Game state object
         const gameState = {
             playerScore: 0,
             computerScore: 0,
@@ -515,17 +539,17 @@
             soundEnabled: true,
             bgMusicEnabled: false,
             gameMode: 'classic',
-            timeLeft: 120, // for timed mode
+            timeLeft: 120,
             lastTime: 0
         };
         
-        // Game constants
         const CONFIG = {
             PADDLE_SPEED: 0.25,
             COMPUTER_SPEED: 0.15,
-            INITIAL_BALL_SPEED: 0.15,
-            MAX_BALL_SPEED: 0.35,
-            SPEED_INCREMENT: 0.02,
+            INITIAL_BALL_SPEED: 0.2,
+            MAX_BALL_SPEED: 0.4,
+            SPEED_INCREMENT: 0.015,
+            BALL_SPIN: 0.02,
             TABLE_WIDTH: 20,
             TABLE_DEPTH: 10,
             BALL_SIZE: 0.5,
@@ -533,30 +557,26 @@
             PADDLE_HEIGHT: 2,
             PADDLE_DEPTH: 3,
             DIFFICULTY_SETTINGS: {
-                easy: { errorRate: 0.25, reactionDelay: 300, speed: 0.12 },
-                medium: { errorRate: 0.15, reactionDelay: 200, speed: 0.15 },
-                hard: { errorRate: 0.08, reactionDelay: 120, speed: 0.18 },
-                expert: { errorRate: 0.03, reactionDelay: 50, speed: 0.22 }
+                easy: { errorRate: 0.5, reactionDelay: 500, speed: 0.10 },
+               medium: { errorRate: 0.3, reactionDelay: 350, speed: 0.15 },
+               hard: { errorRate: 0.15, reactionDelay: 200, speed: 0.20 },
+               expert: { errorRate: 0.05, reactionDelay: 100, speed: 0.25 }
             }
         };
         
-        // Three.js objects
         let scene, camera, renderer;
         let paddle, computerPaddle, ball;
         let ballVelocity = new THREE.Vector3(0.15, 0, 0);
         let tableTexture, paddleTexture, ballTexture;
         
-        // Control flags
         let controls = {
             upPressed: false,
             downPressed: false
         };
         
-        // AI variables
         let computerTargetZ = 0;
         let lastPredictionTime = 0;
         
-        // DOM Elements
         const domElements = {
             playerScore: document.getElementById('playerScore'),
             computerScore: document.getElementById('computerScore'),
@@ -580,16 +600,16 @@
             gameOverModal: document.getElementById('gameOverModal'),
             gameOverMessage: document.getElementById('gameOverMessage'),
             playAgainButton: document.getElementById('playAgainButton'),
-            soundButton: document.getElementById('soundButton')
+            soundButton: document.getElementById('soundButton'),
+            timerPanel: document.getElementById('timerPanel'),
+            timerDisplay: document.getElementById('timerDisplay')
         };
 
         init();
 
         function init() {
-            // Update high score display
             domElements.highScore.textContent = gameState.highScore;
             
-            // Initialize Three.js scene
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -606,7 +626,6 @@
             setupEventListeners();
             initializeSettings();
             
-            // Hide loading screen and start animation loop
             setTimeout(() => {
                 domElements.loadingScreen.style.display = 'none';
                 animate();
@@ -616,13 +635,11 @@
         function loadTextures() {
             const textureLoader = new THREE.TextureLoader();
             
-            // Create wood texture using data URL
             const woodCanvas = document.createElement('canvas');
             woodCanvas.width = 512;
             woodCanvas.height = 512;
             const ctx = woodCanvas.getContext('2d');
             
-            // Create wood grain pattern
             ctx.fillStyle = '#8B4513';
             ctx.fillRect(0, 0, 512, 512);
             
@@ -643,7 +660,6 @@
             tableTexture.wrapS = tableTexture.wrapT = THREE.RepeatWrapping;
             tableTexture.repeat.set(2, 1);
             
-            // Create darker wood for paddles
             const paddleCanvas = document.createElement('canvas');
             paddleCanvas.width = 256;
             paddleCanvas.height = 256;
@@ -667,7 +683,6 @@
             
             paddleTexture = new THREE.CanvasTexture(paddleCanvas);
             
-            // Create ball texture
             const ballCanvas = document.createElement('canvas');
             ballCanvas.width = 128;
             ballCanvas.height = 128;
@@ -678,7 +693,6 @@
             ballCtx.arc(64, 64, 60, 0, Math.PI * 2);
             ballCtx.fill();
             
-            // Add some shading
             const gradient = ballCtx.createRadialGradient(50, 50, 0, 64, 64, 60);
             gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
             gradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
@@ -691,7 +705,6 @@
         }
         
         function createEnvironment() {
-            // Table
             const tableGeometry = new THREE.BoxGeometry(CONFIG.TABLE_WIDTH, 1, CONFIG.TABLE_DEPTH);
             const tableMaterial = new THREE.MeshPhongMaterial({ 
                 map: tableTexture,
@@ -702,17 +715,14 @@
             table.receiveShadow = true;
             scene.add(table);
 
-            // Table Lines
             const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
             
-            // Center line
             const centerLine = new THREE.BufferGeometry().setFromPoints([
                 new THREE.Vector3(0, 0.51, -CONFIG.TABLE_DEPTH/2),
                 new THREE.Vector3(0, 0.51, CONFIG.TABLE_DEPTH/2)
             ]);
             scene.add(new THREE.Line(centerLine, lineMaterial));
             
-            // Side lines
             const sideLine1 = new THREE.BufferGeometry().setFromPoints([
                 new THREE.Vector3(-CONFIG.TABLE_WIDTH/2, 0.51, -CONFIG.TABLE_DEPTH/2),
                 new THREE.Vector3(-CONFIG.TABLE_WIDTH/2, 0.51, CONFIG.TABLE_DEPTH/2)
@@ -725,7 +735,6 @@
             ]);
             scene.add(new THREE.Line(sideLine2, lineMaterial));
 
-            // Net
             const netGeometry = new THREE.BoxGeometry(0.1, 1.5, CONFIG.TABLE_DEPTH);
             const netMaterial = new THREE.MeshPhongMaterial({ 
                 color: 0xeeeeee,
@@ -738,10 +747,8 @@
             net.castShadow = true;
             scene.add(net);
 
-            // Paddles
             const paddleGeometry = new THREE.BoxGeometry(CONFIG.PADDLE_WIDTH, CONFIG.PADDLE_HEIGHT, CONFIG.PADDLE_DEPTH);
             
-            // Player paddle
             const playerMaterial = new THREE.MeshPhongMaterial({ 
                 map: paddleTexture,
                 shininess: 20,
@@ -752,19 +759,17 @@
             paddle.castShadow = true;
             scene.add(paddle);
 
-            // Computer paddle
             const computerMaterial = new THREE.MeshPhongMaterial({ 
                 map: paddleTexture,
                 shininess: 20,
                 bumpScale: 0.03,
-                color: 0xDD9999  // slight red tint
+                color: 0xDD9999
             });
             computerPaddle = new THREE.Mesh(paddleGeometry, computerMaterial);
             computerPaddle.position.set(CONFIG.TABLE_WIDTH/2 - 1, 1.5, 0);
             computerPaddle.castShadow = true;
             scene.add(computerPaddle);
 
-            // Ball
             const ballGeometry = new THREE.SphereGeometry(CONFIG.BALL_SIZE);
             const ballMaterial = new THREE.MeshPhongMaterial({ 
                 map: ballTexture,
@@ -776,7 +781,6 @@
             resetBall();
             scene.add(ball);
             
-            // Floor
             const floorGeometry = new THREE.PlaneGeometry(40, 40);
             const floorMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
             const floor = new THREE.Mesh(floorGeometry, floorMaterial);
@@ -787,7 +791,6 @@
         }
         
         function createLighting() {
-            // Main light with shadows
             const mainLight = new THREE.SpotLight(0xffffff, 1);
             mainLight.position.set(0, 20, 0);
             mainLight.castShadow = true;
@@ -800,18 +803,15 @@
             mainLight.intensity = 1.2;
             scene.add(mainLight);
             
-            // Front light
             const frontLight = new THREE.DirectionalLight(0xffffff, 0.6);
             frontLight.position.set(0, 10, 10);
             frontLight.castShadow = true;
             scene.add(frontLight);
             
-            // Back light
             const backLight = new THREE.DirectionalLight(0xffffff, 0.4);
             backLight.position.set(0, 10, -10);
             scene.add(backLight);
             
-            // Ambient light
             const ambientLight = new THREE.AmbientLight(0x606060);
             scene.add(ambientLight);
         }
@@ -822,7 +822,6 @@
         }
         
         function setupEventListeners() {
-            // Keyboard controls
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') {
                     controls.upPressed = true;
@@ -844,7 +843,6 @@
                 }
             });
             
-            // Touch controls
             let touchStartY = 0;
             renderer.domElement.addEventListener('touchstart', (e) => {
                 touchStartY = e.touches[0].clientY;
@@ -859,7 +857,6 @@
                 touchStartY = e.touches[0].clientY;
             });
             
-            // Mouse controls
             let mouseDown = false;
             let lastMouseY = 0;
             
@@ -886,14 +883,12 @@
                 mouseDown = false;
             });
             
-            // Window resize
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
             
-            // Control buttons
             domElements.startButton.addEventListener('click', startGame);
             domElements.pauseButton.addEventListener('click', togglePause);
             domElements.resetButton.addEventListener('click', resetGame);
@@ -913,48 +908,37 @@
         }
         
         function initializeSettings() {
-            // Sensitivity slider
             domElements.sensitivitySlider.addEventListener('input', (e) => {
                 gameState.sensitivityMultiplier = e.target.value / 25;
                 domElements.sensitivityValue.textContent = `${e.target.value > 25 ? 'High' : (e.target.value < 25 ? 'Low' : 'Normal')} (${e.target.value})`;
             });
             
-            // Difficulty select
             domElements.difficultySelect.addEventListener('change', (e) => {
                 gameState.difficulty = e.target.value;
             });
             
-            // Ball speed slider
             domElements.ballSpeedSlider.addEventListener('input', (e) => {
                 gameState.ballSpeedMultiplier = e.target.value / 15;
                 domElements.ballSpeedValue.textContent = `${e.target.value > 15 ? 'Fast' : (e.target.value < 15 ? 'Slow' : 'Normal')} (${e.target.value})`;
             });
             
-            // Table style select
             domElements.tableStyleSelect.addEventListener('change', (e) => {
                 changeTableStyle(e.target.value);
             });
             
-            // Sound effects toggle
             domElements.soundEffectsToggle.addEventListener('change', (e) => {
                 gameState.soundEnabled = e.target.checked;
                 domElements.soundButton.innerHTML = gameState.soundEnabled ? 
                     '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>';
             });
             
-            // Background music toggle
             domElements.bgMusicToggle.addEventListener('change', (e) => {
                 gameState.bgMusicEnabled = e.target.checked;
-                if (gameState.bgMusicEnabled) {
-                    // Start background music (would implement audio API here)
-                } else {
-                    // Stop background music
-                }
             });
             
-            // Game mode select
             domElements.gameModeSelect.addEventListener('change', (e) => {
                 gameState.gameMode = e.target.value;
+                domElements.timerPanel.style.display = gameState.gameMode === 'timed' ? 'block' : 'none';
                 resetGame();
             });
         }
@@ -973,7 +957,7 @@
                         table.material.color.setHex(0x2A5934);
                         table.material.shininess = 20;
                         break;
-                    default: // wood
+                    default:
                         table.material.color.setHex(0x8B4513);
                         table.material.shininess = 30;
                 }
@@ -983,7 +967,6 @@
         function resetBall() {
             ball.position.set(0, 1.5, 0);
             
-            // Serve logic - alternate between player and computer
             const serveToPlayer = Math.random() < 0.5;
             const speed = CONFIG.INITIAL_BALL_SPEED * gameState.ballSpeedMultiplier;
             
@@ -998,21 +981,17 @@
             const difficulty = CONFIG.DIFFICULTY_SETTINGS[gameState.difficulty];
             const currentTime = performance.now();
             
-            // Only update AI prediction every reactionDelay
             if (currentTime - lastPredictionTime > difficulty.reactionDelay) {
-                // Predict where the ball will be
-                if (ballVelocity.x > 0) { // Ball moving towards computer
+                if (ballVelocity.x > 0) {
                     const timeToReach = (computerPaddle.position.x - ball.position.x) / ballVelocity.x;
                     computerTargetZ = ball.position.z + ballVelocity.z * timeToReach;
                     
-                    // Add artificial error based on difficulty
                     const errorRange = CONFIG.TABLE_DEPTH * difficulty.errorRate;
                     computerTargetZ += (Math.random() - 0.5) * errorRange;
                 }
                 lastPredictionTime = currentTime;
             }
             
-            // Move computer paddle towards predicted position
             const moveAmount = difficulty.speed * gameState.sensitivityMultiplier;
             if (Math.abs(computerPaddle.position.z - computerTargetZ) > 0.1) {
                 if (computerPaddle.position.z < computerTargetZ) {
@@ -1022,19 +1001,16 @@
                 }
             }
             
-            // Keep paddle within bounds
             computerPaddle.position.z = Math.max(-CONFIG.TABLE_DEPTH/2 + CONFIG.PADDLE_DEPTH/2, 
                 Math.min(CONFIG.TABLE_DEPTH/2 - CONFIG.PADDLE_DEPTH/2, computerPaddle.position.z));
         }
         
         function handleCollisions() {
-            // Ball collision with paddles
             const ballLeft = ball.position.x - CONFIG.BALL_SIZE;
             const ballRight = ball.position.x + CONFIG.BALL_SIZE;
             const ballFront = ball.position.z - CONFIG.BALL_SIZE;
             const ballBack = ball.position.z + CONFIG.BALL_SIZE;
             
-            // Player paddle collision
             if (ballLeft <= paddle.position.x + CONFIG.PADDLE_WIDTH/2 && 
                 ballLeft >= paddle.position.x - CONFIG.PADDLE_WIDTH/2 &&
                 ballFront <= paddle.position.z + CONFIG.PADDLE_DEPTH/2 && 
@@ -1044,13 +1020,11 @@
                 const relativeIntersectZ = (ball.position.z - paddle.position.z) / (CONFIG.PADDLE_DEPTH/2);
                 ballVelocity.z = relativeIntersectZ * 0.3;
                 
-                // Increase speed slightly
                 ballVelocity.x = Math.min(ballVelocity.x + CONFIG.SPEED_INCREMENT, CONFIG.MAX_BALL_SPEED);
                 
                 playSound('paddle');
             }
             
-            // Computer paddle collision
             if (ballRight >= computerPaddle.position.x - CONFIG.PADDLE_WIDTH/2 && 
                 ballRight <= computerPaddle.position.x + CONFIG.PADDLE_WIDTH/2 &&
                 ballFront <= computerPaddle.position.z + CONFIG.PADDLE_DEPTH/2 && 
@@ -1060,20 +1034,17 @@
                 const relativeIntersectZ = (ball.position.z - computerPaddle.position.z) / (CONFIG.PADDLE_DEPTH/2);
                 ballVelocity.z = relativeIntersectZ * 0.3;
                 
-                // Increase speed slightly
                 ballVelocity.x = Math.max(ballVelocity.x - CONFIG.SPEED_INCREMENT, -CONFIG.MAX_BALL_SPEED);
                 
                 playSound('paddle');
             }
             
-            // Table bounds collision (Z axis)
             if (ball.position.z + CONFIG.BALL_SIZE >= CONFIG.TABLE_DEPTH/2 || 
                 ball.position.z - CONFIG.BALL_SIZE <= -CONFIG.TABLE_DEPTH/2) {
                 ballVelocity.z = -ballVelocity.z;
                 playSound('table');
             }
             
-            // Scoring logic
             if (ball.position.x < -CONFIG.TABLE_WIDTH/2) {
                 gameState.computerScore++;
                 domElements.computerScore.textContent = gameState.computerScore;
@@ -1096,27 +1067,35 @@
             
             switch(gameState.gameMode) {
                 case 'first11':
-                    if (gameState.playerScore >= 11 || gameState.computerScore >= 11) {
-                        gameOver = true;
+                    gameOver = gameState.playerScore >= 11 || gameState.computerScore >= 11;
+                    if (gameOver) {
                         winner = gameState.playerScore >= 11 ? 'Player' : 'Computer';
                     }
                     break;
+                    
                 case 'first21':
-                    if (gameState.playerScore >= 21 || gameState.computerScore >= 21) {
-                        gameOver = true;
+                    gameOver = gameState.playerScore >= 21 || gameState.computerScore >= 21;
+                    if (gameOver) {
                         winner = gameState.playerScore >= 21 ? 'Player' : 'Computer';
                     }
                     break;
+                    
                 case 'timed':
                     if (gameState.timeLeft <= 0) {
                         gameOver = true;
-                        winner = gameState.playerScore > gameState.computerScore ? 'Player' : 
-                                 gameState.computerScore > gameState.playerScore ? 'Computer' : 'Draw';
+                        if (gameState.playerScore > gameState.computerScore) {
+                            winner = 'Player';
+                        } else if (gameState.computerScore > gameState.playerScore) {
+                            winner = 'Computer';
+                        } else {
+                            winner = 'Draw';
+                        }
                     }
                     break;
-                default: // classic
-                    if (gameState.playerScore >= 21 || gameState.computerScore >= 21) {
-                        gameOver = true;
+                    
+                default:
+                    gameOver = gameState.playerScore >= 21 || gameState.computerScore >= 21;
+                    if (gameOver) {
                         winner = gameState.playerScore >= 21 ? 'Player' : 'Computer';
                     }
             }
@@ -1125,8 +1104,19 @@
                 gameState.paused = true;
                 gameState.started = false;
                 domElements.gameOverModal.classList.add('active');
-                domElements.gameOverMessage.textContent = winner === 'Draw' ? 
-                    'It\'s a draw!' : `${winner} wins with ${Math.max(gameState.playerScore, gameState.computerScore)} points!`;
+                let message;
+                
+                if (winner === 'Draw') {
+                    message = `It's a draw! ${gameState.playerScore}-${gameState.computerScore}`;
+                } else {
+                    message = `${winner} wins with ${Math.max(gameState.playerScore, gameState.computerScore)} points!`;
+                    
+                    if (gameState.gameMode === 'timed') {
+                        message = `Time's up! ${message}`;
+                    }
+                }
+                
+                domElements.gameOverMessage.textContent = message;
                 domElements.startButton.disabled = false;
                 domElements.pauseButton.disabled = true;
             }
@@ -1145,7 +1135,11 @@
             gameState.started = true;
             gameState.playerScore = 0;
             gameState.computerScore = 0;
-            gameState.timeLeft = 120;
+            
+            if (gameState.gameMode === 'timed') {
+                gameState.timeLeft = 120;
+                domElements.timerDisplay.textContent = '2:00';
+            }
             
             domElements.playerScore.textContent = '0';
             domElements.computerScore.textContent = '0';
@@ -1180,6 +1174,11 @@
             domElements.pauseButton.innerHTML = '<i class="fas fa-pause"></i>';
             domElements.gameOverModal.classList.remove('active');
             
+            if (gameState.gameMode === 'timed') {
+                domElements.timerDisplay.textContent = '2:00';
+                gameState.timeLeft = 120;
+            }
+            
             resetBall();
             paddle.position.z = 0;
             computerPaddle.position.z = 0;
@@ -1194,7 +1193,6 @@
             
             switch(type) {
                 case 'paddle':
-                    // Create paddle hit sound
                     const oscillator = audioContext.createOscillator();
                     const gainNode = audioContext.createGain();
                     
@@ -1213,7 +1211,6 @@
                     break;
                     
                 case 'table':
-                    // Create table bounce sound
                     const whiteNoise = audioContext.createBufferSource();
                     const bufferSize = audioContext.sampleRate * 0.05;
                     const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
@@ -1242,7 +1239,6 @@
                     break;
                     
                 case 'score':
-                    // Create score sound
                     const scoreOsc = audioContext.createOscillator();
                     const scoreGain = audioContext.createGain();
                     
@@ -1261,7 +1257,6 @@
                     break;
                     
                 case 'click':
-                    // Create click sound
                     const clickOsc = audioContext.createOscillator();
                     const clickGain = audioContext.createGain();
                     
@@ -1279,7 +1274,6 @@
                     break;
                     
                 case 'start':
-                    // Create start game sound
                     const startOsc = audioContext.createOscillator();
                     const startGain = audioContext.createGain();
                     
@@ -1303,20 +1297,23 @@
             requestAnimationFrame(animate);
             
             if (!gameState.paused && gameState.started) {
-                // Update timer for timed mode
                 if (gameState.gameMode === 'timed') {
                     if (gameState.lastTime === 0) gameState.lastTime = currentTime;
                     const elapsed = (currentTime - gameState.lastTime) / 1000;
                     gameState.timeLeft -= elapsed;
                     gameState.lastTime = currentTime;
                     
-                    // Update display (implement timer display if needed)
+                    const minutes = Math.floor(gameState.timeLeft / 60);
+                    const seconds = Math.floor(gameState.timeLeft % 60);
+                    domElements.timerDisplay.textContent = 
+                        `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    
                     if (gameState.timeLeft <= 0) {
+                        gameState.timeLeft = 0;
                         checkGameEnd();
                     }
                 }
                 
-                // Update player paddle
                 const paddleSpeed = CONFIG.PADDLE_SPEED * gameState.sensitivityMultiplier;
                 if (controls.upPressed) {
                     paddle.position.z -= paddleSpeed;
@@ -1325,17 +1322,13 @@
                     paddle.position.z += paddleSpeed;
                 }
                 
-                // Keep paddle within bounds
                 paddle.position.z = Math.max(-CONFIG.TABLE_DEPTH/2 + CONFIG.PADDLE_DEPTH/2, 
                     Math.min(CONFIG.TABLE_DEPTH/2 - CONFIG.PADDLE_DEPTH/2, paddle.position.z));
                 
-                // Update ball position
                 ball.position.add(ballVelocity);
                 
-                // Update AI
                 updateAI();
                 
-                // Handle collisions
                 handleCollisions();
             }
             
