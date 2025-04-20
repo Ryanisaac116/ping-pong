@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ProPong 3D - Professional Ping Pong Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body { 
+            overflow: hidden; 
+            background-color: #1a1a1a; 
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #gameUI {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        #gameUI .clickable {
+            pointer-events: auto;
+        }
+        
+        #scoreBoard {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            user-select: none;
+        }
+        
+        .scorePanel {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            min-width: 120px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .playerName {
+            color: #FFD700;
+            font-size: 12px;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .computerName {
+            color: #E57373;
+        }
+        
+        .score {
+            font-size: 24px;
+        }
+        
+        .highScorePanel {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        #controlsPanel {
+            position: absolute;
+            top: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+        }
+        
+        .iconButton {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 18px;
+        }
+        
+        .iconButton:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+        
+        .iconButton:active {
+            transform: scale(0.95);
+        }
+        
+        .iconButton.active {
+            background: #FFD700;
+            color: black;
+        }
+        
+        .iconButton:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        #settingsButton {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        
+        #settingsPanel {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            width: 300px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            backdrop-filter: blur(10px);
+            display: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        #settingsPanel.active {
+            display: block;
+        }
+        
+        .settingsHeader {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .settingsHeader h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #FFD700;
+        }
+        
+        .settingRow {
+            margin-bottom: 20px;
+        }
+        
+        .settingRow label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #ccc;
+        }
+        
+        .settingRow input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+            accent-color: #FFD700;
+        }
+        
+        .settingValue {
+            text-align: center;
+            font-size: 12px;
+            color: #FFD700;
+        }
+        
+        .settingRow select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 14px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #FFD700;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            backdrop-filter: blur(5px);
+        }
+        
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+            color: white;
+        }
+        
+        .loader {
+            border: 5px solid #333;
+            border-top: 5px solid #FFD700;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loadingText {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        
+        #gameOverModal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            color: white;
+            text-align: center;
+            display: none;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        #gameOverModal.active {
+            display: block;
+        }
+        
+        #gameOverModal h2 {
+            color: #FFD700;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        
+        #gameOverModal p {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        
+        #gameOverModal button {
+            background: #FFD700;
+            color: black;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        #gameOverModal button:hover {
+            background: #FFC000;
+            transform: scale(1.05);
+        }
+        
+        #soundButton {
+            position: absolute;
+            top: 20px;
+            right: 80px;
+        }
+        
+        /* Mobile-specific styles */
+        @media (max-width: 768px) {
+            #instructions {
+                font-size: 12px;
+                padding: 8px;
+            }
+            
+            .scorePanel {
+                padding: 6px 15px;
+                min-width: 100px;
+            }
+            
+            .score {
+                font-size: 20px;
+            }
+            
+            #settingsPanel {
+                width: 280px;
+                left: 20px;
+                top: 120px;
+            }
+            
+            .iconButton {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingScreen">
+        <div class="loader"></div>
+        <div class="loadingText">Loading ProPong 3D...</div>
+    </div>
+
+    <div id="gameContainer">
+        <div id="gameUI">
+            <div id="scoreBoard">
+                <div class="scorePanel">
+                    <div class="playerName">PLAYER</div>
+                    <div class="score" id="playerScore">0</div>
+                </div>
+                <div class="scorePanel">
+                    <div class="playerName computerName">COMPUTER</div>
+                    <div class="score" id="computerScore">0</div>
+                </div>
+                <div class="scorePanel highScorePanel">
+                    <div class="playerName">HIGH SCORE</div>
+                    <div class="score" id="highScore">0</div>
+                </div>
+            </div>
+            
+            <div id="controlsPanel" class="clickable">
+                <button id="startButton" class="iconButton" title="Start Game">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button id="pauseButton" class="iconButton" disabled title="Pause">
+                    <i class="fas fa-pause"></i>
+                </button>
+                <button id="resetButton" class="iconButton" disabled title="Reset">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+            
+            <button id="soundButton" class="iconButton clickable" title="Toggle Sound">
+                <i class="fas fa-volume-up"></i>
+            </button>
+            
+            <button id="settingsButton" class="iconButton clickable" title="Settings">
+                <i class="fas fa-cog"></i>
+            </button>
+            
+            <div id="settingsPanel" class="clickable">
+                <div class="settingsHeader">
+                    <h3>Game Settings</h3>
+                    <button id="closeSettings" class="iconButton" style="width: 30px; height: 30px; font-size: 14px;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="settingRow">
+                    <label for="sensitivitySlider">Paddle Sensitivity</label>
+                    <input type="range" id="sensitivitySlider" min="10" max="50" value="25" step="1">
+                    <div class="settingValue" id="sensitivityValue">Normal (25)</div>
+                </div>
+                
+                <div class="settingRow">
+                    <label for="difficultySelect">Computer Difficulty</label>
+                    <select id="difficultySelect">
+                        <option value="easy">Easy</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="hard">Hard</option>
+                        <option value="expert">Expert</option>
+                    </select>
+                </div>
+                
+                <div class="settingRow">
+                    <label for="ballSpeedSlider">Ball Speed</label>
+                    <input type="range" id="ballSpeedSlider" min="10" max="30" value="15" step="1">
+                    <div class="settingValue" id="ballSpeedValue">Normal (15)</div>
+                </div>
+                
+                <div class="settingRow">
+                    <label>Table Style</label>
+                    <select id="tableStyleSelect">
+                        <option value="wood" selected>Wooden Classic</option>
+                        <option value="modern">Modern Blue</option>
+                        <option value="tournament">Tournament Green</option>
+                    </select>
+                </div>
+                
+                <div class="settingRow">
+                    <label>Sound Effects</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="soundEffectsToggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="settingRow">
+                    <label>Background Music</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="bgMusicToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="settingRow">
+                    <label>Game Mode</label>
+                    <select id="gameModeSelect">
+                        <option value="classic" selected>Classic Match</option>
+                        <option value="timed">Timed (2 min)</option>
+                        <option value="first11">First to 11</option>
+                        <option value="first21">First to 21</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="instructions">
+                Use <strong>W/S</strong> keys or <strong>↑/↓</strong> arrow keys to move your paddle. Press <strong>Space</strong> to pause.
+            </div>
+        </div>
+    </div>
+    
+    <div id="gameOverModal">
+        <h2>Game Over!</h2>
+        <p id="gameOverMessage"></p>
+        <button id="playAgainButton">Play Again</button>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Game state object
+        const gameState = {
+            playerScore: 0,
+            computerScore: 0,
+            highScore: parseInt(localStorage.getItem('pingPongHighScore') || '0'),
+            paused: true,
+            started: false,
+            sensitivityMultiplier: 1.0,
+            difficulty: 'medium',
+            ballSpeedMultiplier: 1.0,
+            tableStyle: 'wood',
+            soundEnabled: true,
+            bgMusicEnabled: false,
+            gameMode: 'classic',
+            timeLeft: 120, // for timed mode
+            lastTime: 0
+        };
+        
+        // Game constants
+        const CONFIG = {
+            PADDLE_SPEED: 0.25,
+            COMPUTER_SPEED: 0.15,
+            INITIAL_BALL_SPEED: 0.15,
+            MAX_BALL_SPEED: 0.35,
+            SPEED_INCREMENT: 0.02,
+            TABLE_WIDTH: 20,
+            TABLE_DEPTH: 10,
+            BALL_SIZE: 0.5,
+            PADDLE_WIDTH: 1,
+            PADDLE_HEIGHT: 2,
+            PADDLE_DEPTH: 3,
+            DIFFICULTY_SETTINGS: {
+                easy: { errorRate: 0.25, reactionDelay: 300, speed: 0.12 },
+                medium: { errorRate: 0.15, reactionDelay: 200, speed: 0.15 },
+                hard: { errorRate: 0.08, reactionDelay: 120, speed: 0.18 },
+                expert: { errorRate: 0.03, reactionDelay: 50, speed: 0.22 }
+            }
+        };
+        
+        // Three.js objects
+        let scene, camera, renderer;
+        let paddle, computerPaddle, ball;
+        let ballVelocity = new THREE.Vector3(0.15, 0, 0);
+        let tableTexture, paddleTexture, ballTexture;
+        
+        // Control flags
+        let controls = {
+            upPressed: false,
+            downPressed: false
+        };
+        
+        // AI variables
+        let computerTargetZ = 0;
+        let lastPredictionTime = 0;
+        
+        // DOM Elements
+        const domElements = {
+            playerScore: document.getElementById('playerScore'),
+            computerScore: document.getElementById('computerScore'),
+            highScore: document.getElementById('highScore'),
+            startButton: document.getElementById('startButton'),
+            pauseButton: document.getElementById('pauseButton'),
+            resetButton: document.getElementById('resetButton'),
+            settingsButton: document.getElementById('settingsButton'),
+            settingsPanel: document.getElementById('settingsPanel'),
+            closeSettings: document.getElementById('closeSettings'),
+            sensitivitySlider: document.getElementById('sensitivitySlider'),
+            sensitivityValue: document.getElementById('sensitivityValue'),
+            difficultySelect: document.getElementById('difficultySelect'),
+            ballSpeedSlider: document.getElementById('ballSpeedSlider'),
+            ballSpeedValue: document.getElementById('ballSpeedValue'),
+            tableStyleSelect: document.getElementById('tableStyleSelect'),
+            soundEffectsToggle: document.getElementById('soundEffectsToggle'),
+            bgMusicToggle: document.getElementById('bgMusicToggle'),
+            gameModeSelect: document.getElementById('gameModeSelect'),
+            loadingScreen: document.getElementById('loadingScreen'),
+            gameOverModal: document.getElementById('gameOverModal'),
+            gameOverMessage: document.getElementById('gameOverMessage'),
+            playAgainButton: document.getElementById('playAgainButton'),
+            soundButton: document.getElementById('soundButton')
+        };
+
+        init();
+
+        function init() {
+            // Update high score display
+            domElements.highScore.textContent = gameState.highScore;
+            
+            // Initialize Three.js scene
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x1a1a1a);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('gameContainer').appendChild(renderer.domElement);
+
+            loadTextures();
+            createEnvironment();
+            createLighting();
+            setupCamera();
+            setupEventListeners();
+            initializeSettings();
+            
+            // Hide loading screen and start animation loop
+            setTimeout(() => {
+                domElements.loadingScreen.style.display = 'none';
+                animate();
+            }, 1500);
+        }
+        
+        function loadTextures() {
+            const textureLoader = new THREE.TextureLoader();
+            
+            // Create wood texture using data URL
+            const woodCanvas = document.createElement('canvas');
+            woodCanvas.width = 512;
+            woodCanvas.height = 512;
+            const ctx = woodCanvas.getContext('2d');
+            
+            // Create wood grain pattern
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(0, 0, 512, 512);
+            
+            for (let i = 0; i < 80; i++) {
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(139, 69, 19, ${0.3 + Math.random() * 0.3})`;
+                ctx.lineWidth = 2 + Math.random() * 3;
+                ctx.moveTo(0, i * 7 + Math.random() * 10);
+                ctx.bezierCurveTo(
+                    128 + Math.random() * 50, i * 7 + Math.random() * 20,
+                    256 + Math.random() * 50, i * 7 + Math.random() * 20,
+                    512, i * 7 + Math.random() * 10
+                );
+                ctx.stroke();
+            }
+            
+            tableTexture = new THREE.CanvasTexture(woodCanvas);
+            tableTexture.wrapS = tableTexture.wrapT = THREE.RepeatWrapping;
+            tableTexture.repeat.set(2, 1);
+            
+            // Create darker wood for paddles
+            const paddleCanvas = document.createElement('canvas');
+            paddleCanvas.width = 256;
+            paddleCanvas.height = 256;
+            const paddleCtx = paddleCanvas.getContext('2d');
+            
+            paddleCtx.fillStyle = '#6B4423';
+            paddleCtx.fillRect(0, 0, 256, 256);
+            
+            for (let i = 0; i < 20; i++) {
+                paddleCtx.beginPath();
+                paddleCtx.strokeStyle = `rgba(60, 35, 10, ${0.3 + Math.random() * 0.3})`;
+                paddleCtx.lineWidth = 3 + Math.random() * 3;
+                paddleCtx.moveTo(0, i * 13 + Math.random() * 10);
+                paddleCtx.bezierCurveTo(
+                    64 + Math.random() * 40, i * 13 + Math.random() * 20,
+                    128 + Math.random() * 40, i * 13 + Math.random() * 20,
+                    256, i * 13 + Math.random() * 10
+                );
+                paddleCtx.stroke();
+            }
+            
+            paddleTexture = new THREE.CanvasTexture(paddleCanvas);
+            
+            // Create ball texture
+            const ballCanvas = document.createElement('canvas');
+            ballCanvas.width = 128;
+            ballCanvas.height = 128;
+            const ballCtx = ballCanvas.getContext('2d');
+            
+            ballCtx.fillStyle = '#FAFAFA';
+            ballCtx.beginPath();
+            ballCtx.arc(64, 64, 60, 0, Math.PI * 2);
+            ballCtx.fill();
+            
+            // Add some shading
+            const gradient = ballCtx.createRadialGradient(50, 50, 0, 64, 64, 60);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
+            ballCtx.fillStyle = gradient;
+            ballCtx.beginPath();
+            ballCtx.arc(64, 64, 60, 0, Math.PI * 2);
+            ballCtx.fill();
+            
+            ballTexture = new THREE.CanvasTexture(ballCanvas);
+        }
+        
+        function createEnvironment() {
+            // Table
+            const tableGeometry = new THREE.BoxGeometry(CONFIG.TABLE_WIDTH, 1, CONFIG.TABLE_DEPTH);
+            const tableMaterial = new THREE.MeshPhongMaterial({ 
+                map: tableTexture,
+                shininess: 30,
+                bumpScale: 0.05
+            });
+            const table = new THREE.Mesh(tableGeometry, tableMaterial);
+            table.receiveShadow = true;
+            scene.add(table);
+
+            // Table Lines
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
+            
+            // Center line
+            const centerLine = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0.51, -CONFIG.TABLE_DEPTH/2),
+                new THREE.Vector3(0, 0.51, CONFIG.TABLE_DEPTH/2)
+            ]);
+            scene.add(new THREE.Line(centerLine, lineMaterial));
+            
+            // Side lines
+            const sideLine1 = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(-CONFIG.TABLE_WIDTH/2, 0.51, -CONFIG.TABLE_DEPTH/2),
+                new THREE.Vector3(-CONFIG.TABLE_WIDTH/2, 0.51, CONFIG.TABLE_DEPTH/2)
+            ]);
+            scene.add(new THREE.Line(sideLine1, lineMaterial));
+            
+            const sideLine2 = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(CONFIG.TABLE_WIDTH/2, 0.51, -CONFIG.TABLE_DEPTH/2),
+                new THREE.Vector3(CONFIG.TABLE_WIDTH/2, 0.51, CONFIG.TABLE_DEPTH/2)
+            ]);
+            scene.add(new THREE.Line(sideLine2, lineMaterial));
+
+            // Net
+            const netGeometry = new THREE.BoxGeometry(0.1, 1.5, CONFIG.TABLE_DEPTH);
+            const netMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xeeeeee,
+                transparent: true,
+                opacity: 0.9,
+                shininess: 20
+            });
+            const net = new THREE.Mesh(netGeometry, netMaterial);
+            net.position.y = 1.25;
+            net.castShadow = true;
+            scene.add(net);
+
+            // Paddles
+            const paddleGeometry = new THREE.BoxGeometry(CONFIG.PADDLE_WIDTH, CONFIG.PADDLE_HEIGHT, CONFIG.PADDLE_DEPTH);
+            
+            // Player paddle
+            const playerMaterial = new THREE.MeshPhongMaterial({ 
+                map: paddleTexture,
+                shininess: 20,
+                bumpScale: 0.03
+            });
+            paddle = new THREE.Mesh(paddleGeometry, playerMaterial);
+            paddle.position.set(-CONFIG.TABLE_WIDTH/2 + 1, 1.5, 0);
+            paddle.castShadow = true;
+            scene.add(paddle);
+
+            // Computer paddle
+            const computerMaterial = new THREE.MeshPhongMaterial({ 
+                map: paddleTexture,
+                shininess: 20,
+                bumpScale: 0.03,
+                color: 0xDD9999  // slight red tint
+            });
+            computerPaddle = new THREE.Mesh(paddleGeometry, computerMaterial);
+            computerPaddle.position.set(CONFIG.TABLE_WIDTH/2 - 1, 1.5, 0);
+            computerPaddle.castShadow = true;
+            scene.add(computerPaddle);
+
+            // Ball
+            const ballGeometry = new THREE.SphereGeometry(CONFIG.BALL_SIZE);
+            const ballMaterial = new THREE.MeshPhongMaterial({ 
+                map: ballTexture,
+                shininess: 80,
+                specular: 0x555555
+            });
+            ball = new THREE.Mesh(ballGeometry, ballMaterial);
+            ball.castShadow = true;
+            resetBall();
+            scene.add(ball);
+            
+            // Floor
+            const floorGeometry = new THREE.PlaneGeometry(40, 40);
+            const floorMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -3;
+            floor.receiveShadow = true;
+            scene.add(floor);
+        }
+        
+        function createLighting() {
+            // Main light with shadows
+            const mainLight = new THREE.SpotLight(0xffffff, 1);
+            mainLight.position.set(0, 20, 0);
+            mainLight.castShadow = true;
+            mainLight.shadow.mapSize.width = 2048;
+            mainLight.shadow.mapSize.height = 2048;
+            mainLight.shadow.camera.near = 10;
+            mainLight.shadow.camera.far = 30;
+            mainLight.angle = Math.PI / 4;
+            mainLight.penumbra = 0.2;
+            mainLight.intensity = 1.2;
+            scene.add(mainLight);
+            
+            // Front light
+            const frontLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            frontLight.position.set(0, 10, 10);
+            frontLight.castShadow = true;
+            scene.add(frontLight);
+            
+            // Back light
+            const backLight = new THREE.DirectionalLight(0xffffff, 0.4);
+            backLight.position.set(0, 10, -10);
+            scene.add(backLight);
+            
+            // Ambient light
+            const ambientLight = new THREE.AmbientLight(0x606060);
+            scene.add(ambientLight);
+        }
+        
+        function setupCamera() {
+            camera.position.set(0, 12, 16);
+            camera.lookAt(0, 1, 0);
+        }
+        
+        function setupEventListeners() {
+            // Keyboard controls
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') {
+                    controls.upPressed = true;
+                }
+                if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') {
+                    controls.downPressed = true;
+                }
+                if (e.key === ' ' && gameState.started) {
+                    togglePause();
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') {
+                    controls.upPressed = false;
+                }
+                if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') {
+                    controls.downPressed = false;
+                }
+            });
+            
+            // Touch controls
+            let touchStartY = 0;
+            renderer.domElement.addEventListener('touchstart', (e) => {
+                touchStartY = e.touches[0].clientY;
+            });
+            
+            renderer.domElement.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touchDelta = e.touches[0].clientY - touchStartY;
+                paddle.position.z += touchDelta * 0.02 * gameState.sensitivityMultiplier;
+                paddle.position.z = Math.max(-CONFIG.TABLE_DEPTH/2 + CONFIG.PADDLE_DEPTH/2, 
+                    Math.min(CONFIG.TABLE_DEPTH/2 - CONFIG.PADDLE_DEPTH/2, paddle.position.z));
+                touchStartY = e.touches[0].clientY;
+            });
+            
+            // Mouse controls
+            let mouseDown = false;
+            let lastMouseY = 0;
+            
+            renderer.domElement.addEventListener('mousedown', (e) => {
+                mouseDown = true;
+                lastMouseY = e.clientY;
+            });
+            
+            renderer.domElement.addEventListener('mousemove', (e) => {
+                if (mouseDown) {
+                    const mouseDelta = (e.clientY - lastMouseY) * 0.05 * gameState.sensitivityMultiplier;
+                    paddle.position.z += mouseDelta;
+                    paddle.position.z = Math.max(-CONFIG.TABLE_DEPTH/2 + CONFIG.PADDLE_DEPTH/2, 
+                        Math.min(CONFIG.TABLE_DEPTH/2 - CONFIG.PADDLE_DEPTH/2, paddle.position.z));
+                    lastMouseY = e.clientY;
+                }
+            });
+            
+            renderer.domElement.addEventListener('mouseup', () => {
+                mouseDown = false;
+            });
+            
+            renderer.domElement.addEventListener('mouseleave', () => {
+                mouseDown = false;
+            });
+            
+            // Window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            
+            // Control buttons
+            domElements.startButton.addEventListener('click', startGame);
+            domElements.pauseButton.addEventListener('click', togglePause);
+            domElements.resetButton.addEventListener('click', resetGame);
+            domElements.settingsButton.addEventListener('click', () => {
+                domElements.settingsPanel.classList.toggle('active');
+            });
+            domElements.closeSettings.addEventListener('click', () => {
+                domElements.settingsPanel.classList.remove('active');
+            });
+            domElements.playAgainButton.addEventListener('click', resetGame);
+            domElements.soundButton.addEventListener('click', () => {
+                gameState.soundEnabled = !gameState.soundEnabled;
+                domElements.soundButton.innerHTML = gameState.soundEnabled ? 
+                    '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>';
+                domElements.soundEffectsToggle.checked = gameState.soundEnabled;
+            });
+        }
+        
+        function initializeSettings() {
+            // Sensitivity slider
+            domElements.sensitivitySlider.addEventListener('input', (e) => {
+                gameState.sensitivityMultiplier = e.target.value / 25;
+                domElements.sensitivityValue.textContent = `${e.target.value > 25 ? 'High' : (e.target.value < 25 ? 'Low' : 'Normal')} (${e.target.value})`;
+            });
+            
+            // Difficulty select
+            domElements.difficultySelect.addEventListener('change', (e) => {
+                gameState.difficulty = e.target.value;
+            });
+            
+            // Ball speed slider
+            domElements.ballSpeedSlider.addEventListener('input', (e) => {
+                gameState.ballSpeedMultiplier = e.target.value / 15;
+                domElements.ballSpeedValue.textContent = `${e.target.value > 15 ? 'Fast' : (e.target.value < 15 ? 'Slow' : 'Normal')} (${e.target.value})`;
+            });
+            
+            // Table style select
+            domElements.tableStyleSelect.addEventListener('change', (e) => {
+                changeTableStyle(e.target.value);
+            });
+            
+            // Sound effects toggle
+            domElements.soundEffectsToggle.addEventListener('change', (e) => {
+                gameState.soundEnabled = e.target.checked;
+                domElements.soundButton.innerHTML = gameState.soundEnabled ? 
+                    '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>';
+            });
+            
+            // Background music toggle
+            domElements.bgMusicToggle.addEventListener('change', (e) => {
+                gameState.bgMusicEnabled = e.target.checked;
+                if (gameState.bgMusicEnabled) {
+                    // Start background music (would implement audio API here)
+                } else {
+                    // Stop background music
+                }
+            });
+            
+            // Game mode select
+            domElements.gameModeSelect.addEventListener('change', (e) => {
+                gameState.gameMode = e.target.value;
+                resetGame();
+            });
+        }
+        
+        function changeTableStyle(style) {
+            gameState.tableStyle = style;
+            
+            const table = scene.children.find(obj => obj.geometry?.type === 'BoxGeometry' && obj.geometry.parameters.width === CONFIG.TABLE_WIDTH);
+            if (table) {
+                switch(style) {
+                    case 'modern':
+                        table.material.color.setHex(0x2B4C7E);
+                        table.material.shininess = 60;
+                        break;
+                    case 'tournament':
+                        table.material.color.setHex(0x2A5934);
+                        table.material.shininess = 20;
+                        break;
+                    default: // wood
+                        table.material.color.setHex(0x8B4513);
+                        table.material.shininess = 30;
+                }
+            }
+        }
+        
+        function resetBall() {
+            ball.position.set(0, 1.5, 0);
+            
+            // Serve logic - alternate between player and computer
+            const serveToPlayer = Math.random() < 0.5;
+            const speed = CONFIG.INITIAL_BALL_SPEED * gameState.ballSpeedMultiplier;
+            
+            ballVelocity.set(
+                serveToPlayer ? -speed : speed,
+                0,
+                (Math.random() - 0.5) * 0.1
+            );
+        }
+        
+        function updateAI() {
+            const difficulty = CONFIG.DIFFICULTY_SETTINGS[gameState.difficulty];
+            const currentTime = performance.now();
+            
+            // Only update AI prediction every reactionDelay
+            if (currentTime - lastPredictionTime > difficulty.reactionDelay) {
+                // Predict where the ball will be
+                if (ballVelocity.x > 0) { // Ball moving towards computer
+                    const timeToReach = (computerPaddle.position.x - ball.position.x) / ballVelocity.x;
+                    computerTargetZ = ball.position.z + ballVelocity.z * timeToReach;
+                    
+                    // Add artificial error based on difficulty
+                    const errorRange = CONFIG.TABLE_DEPTH * difficulty.errorRate;
+                    computerTargetZ += (Math.random() - 0.5) * errorRange;
+                }
+                lastPredictionTime = currentTime;
+            }
+            
+            // Move computer paddle towards predicted position
+            const moveAmount = difficulty.speed * gameState.sensitivityMultiplier;
+            if (Math.abs(computerPaddle.position.z - computerTargetZ) > 0.1) {
+                if (computerPaddle.position.z < computerTargetZ) {
+                    computerPaddle.position.z += moveAmount;
+                } else {
+                    computerPaddle.position.z -= moveAmount;
+                }
+            }
+            
+            // Keep paddle within bounds
+            computerPaddle.position.z = Math.max(-CONFIG.TABLE_DEPTH/2 + CONFIG.PADDLE_DEPTH/2, 
+                Math.min(CONFIG.TABLE_DEPTH/2 - CONFIG.PADDLE_DEPTH/2, computerPaddle.position.z));
+        }
+        
+        function handleCollisions() {
+            // Ball collision with paddles
+            const ballLeft = ball.position.x - CONFIG.BALL_SIZE;
+            const ballRight = ball.position.x + CONFIG.BALL_SIZE;
+            const ballFront = ball.position.z - CONFIG.BALL_SIZE;
+            const ballBack = ball.position.z + CONFIG.BALL_SIZE;
+            
+            // Player paddle collision
+            if (ballLeft <= paddle.position.x + CONFIG.PADDLE_WIDTH/2 && 
+                ballLeft >= paddle.position.x - CONFIG.PADDLE_WIDTH/2 &&
+                ballFront <= paddle.position.z + CONFIG.PADDLE_DEPTH/2 && 
+                ballBack >= paddle.position.z - CONFIG.PADDLE_DEPTH/2) {
+                
+                ballVelocity.x = Math.abs(ballVelocity.x);
+                const relativeIntersectZ = (ball.position.z - paddle.position.z) / (CONFIG.PADDLE_DEPTH/2);
+                ballVelocity.z = relativeIntersectZ * 0.3;
+                
+                // Increase speed slightly
+                ballVelocity.x = Math.min(ballVelocity.x + CONFIG.SPEED_INCREMENT, CONFIG.MAX_BALL_SPEED);
+                
+                playSound('paddle');
+            }
+            
+            // Computer paddle collision
+            if (ballRight >= computerPaddle.position.x - CONFIG.PADDLE_WIDTH/2 && 
+                ballRight <= computerPaddle.position.x + CONFIG.PADDLE_WIDTH/2 &&
+                ballFront <= computerPaddle.position.z + CONFIG.PADDLE_DEPTH/2 && 
+                ballBack >= computerPaddle.position.z - CONFIG.PADDLE_DEPTH/2) {
+                
+                ballVelocity.x = -Math.abs(ballVelocity.x);
+                const relativeIntersectZ = (ball.position.z - computerPaddle.position.z) / (CONFIG.PADDLE_DEPTH/2);
+                ballVelocity.z = relativeIntersectZ * 0.3;
+                
+                // Increase speed slightly
+                ballVelocity.x = Math.max(ballVelocity.x - CONFIG.SPEED_INCREMENT, -CONFIG.MAX_BALL_SPEED);
+                
+                playSound('paddle');
+            }
+            
+            // Table bounds collision (Z axis)
+            if (ball.position.z + CONFIG.BALL_SIZE >= CONFIG.TABLE_DEPTH/2 || 
+                ball.position.z - CONFIG.BALL_SIZE <= -CONFIG.TABLE_DEPTH/2) {
+                ballVelocity.z = -ballVelocity.z;
+                playSound('table');
+            }
+            
+            // Scoring logic
+            if (ball.position.x < -CONFIG.TABLE_WIDTH/2) {
+                gameState.computerScore++;
+                domElements.computerScore.textContent = gameState.computerScore;
+                playSound('score');
+                checkGameEnd();
+                if (!gameState.paused) resetBall();
+            } else if (ball.position.x > CONFIG.TABLE_WIDTH/2) {
+                gameState.playerScore++;
+                domElements.playerScore.textContent = gameState.playerScore;
+                playSound('score');
+                checkHighScore();
+                checkGameEnd();
+                if (!gameState.paused) resetBall();
+            }
+        }
+        
+        function checkGameEnd() {
+            let gameOver = false;
+            let winner = '';
+            
+            switch(gameState.gameMode) {
+                case 'first11':
+                    if (gameState.playerScore >= 11 || gameState.computerScore >= 11) {
+                        gameOver = true;
+                        winner = gameState.playerScore >= 11 ? 'Player' : 'Computer';
+                    }
+                    break;
+                case 'first21':
+                    if (gameState.playerScore >= 21 || gameState.computerScore >= 21) {
+                        gameOver = true;
+                        winner = gameState.playerScore >= 21 ? 'Player' : 'Computer';
+                    }
+                    break;
+                case 'timed':
+                    if (gameState.timeLeft <= 0) {
+                        gameOver = true;
+                        winner = gameState.playerScore > gameState.computerScore ? 'Player' : 
+                                 gameState.computerScore > gameState.playerScore ? 'Computer' : 'Draw';
+                    }
+                    break;
+                default: // classic
+                    if (gameState.playerScore >= 21 || gameState.computerScore >= 21) {
+                        gameOver = true;
+                        winner = gameState.playerScore >= 21 ? 'Player' : 'Computer';
+                    }
+            }
+            
+            if (gameOver) {
+                gameState.paused = true;
+                gameState.started = false;
+                domElements.gameOverModal.classList.add('active');
+                domElements.gameOverMessage.textContent = winner === 'Draw' ? 
+                    'It\'s a draw!' : `${winner} wins with ${Math.max(gameState.playerScore, gameState.computerScore)} points!`;
+                domElements.startButton.disabled = false;
+                domElements.pauseButton.disabled = true;
+            }
+        }
+        
+        function checkHighScore() {
+            if (gameState.playerScore > gameState.highScore) {
+                gameState.highScore = gameState.playerScore;
+                domElements.highScore.textContent = gameState.highScore;
+                localStorage.setItem('pingPongHighScore', gameState.highScore.toString());
+            }
+        }
+        
+        function startGame() {
+            gameState.paused = false;
+            gameState.started = true;
+            gameState.playerScore = 0;
+            gameState.computerScore = 0;
+            gameState.timeLeft = 120;
+            
+            domElements.playerScore.textContent = '0';
+            domElements.computerScore.textContent = '0';
+            domElements.startButton.disabled = true;
+            domElements.pauseButton.disabled = false;
+            domElements.resetButton.disabled = false;
+            domElements.startButton.innerHTML = '<i class="fas fa-stop"></i>';
+            
+            resetBall();
+            playSound('start');
+        }
+        
+        function togglePause() {
+            gameState.paused = !gameState.paused;
+            domElements.pauseButton.innerHTML = gameState.paused ? 
+                '<i class="fas fa-play"></i>' : '<i class="fas fa-pause"></i>';
+            playSound('click');
+        }
+        
+        function resetGame() {
+            gameState.paused = true;
+            gameState.started = false;
+            gameState.playerScore = 0;
+            gameState.computerScore = 0;
+            
+            domElements.playerScore.textContent = '0';
+            domElements.computerScore.textContent = '0';
+            domElements.startButton.disabled = false;
+            domElements.pauseButton.disabled = true;
+            domElements.resetButton.disabled = true;
+            domElements.startButton.innerHTML = '<i class="fas fa-play"></i>';
+            domElements.pauseButton.innerHTML = '<i class="fas fa-pause"></i>';
+            domElements.gameOverModal.classList.remove('active');
+            
+            resetBall();
+            paddle.position.z = 0;
+            computerPaddle.position.z = 0;
+            
+            playSound('click');
+        }
+        
+        function playSound(type) {
+            if (!gameState.soundEnabled) return;
+            
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            switch(type) {
+                case 'paddle':
+                    // Create paddle hit sound
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.1);
+                    
+                    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.1);
+                    break;
+                    
+                case 'table':
+                    // Create table bounce sound
+                    const whiteNoise = audioContext.createBufferSource();
+                    const bufferSize = audioContext.sampleRate * 0.05;
+                    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    
+                    whiteNoise.buffer = buffer;
+                    
+                    const filter = audioContext.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.value = 400;
+                    
+                    const envelope = audioContext.createGain();
+                    envelope.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    envelope.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+                    
+                    whiteNoise.connect(filter);
+                    filter.connect(envelope);
+                    envelope.connect(audioContext.destination);
+                    
+                    whiteNoise.start();
+                    whiteNoise.stop(audioContext.currentTime + 0.05);
+                    break;
+                    
+                case 'score':
+                    // Create score sound
+                    const scoreOsc = audioContext.createOscillator();
+                    const scoreGain = audioContext.createGain();
+                    
+                    scoreOsc.type = 'square';
+                    scoreOsc.frequency.setValueAtTime(220, audioContext.currentTime);
+                    scoreOsc.frequency.setValueAtTime(440, audioContext.currentTime + 0.1);
+                    
+                    scoreGain.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    scoreGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                    
+                    scoreOsc.connect(scoreGain);
+                    scoreGain.connect(audioContext.destination);
+                    
+                    scoreOsc.start();
+                    scoreOsc.stop(audioContext.currentTime + 0.2);
+                    break;
+                    
+                case 'click':
+                    // Create click sound
+                    const clickOsc = audioContext.createOscillator();
+                    const clickGain = audioContext.createGain();
+                    
+                    clickOsc.type = 'sine';
+                    clickOsc.frequency.setValueAtTime(1000, audioContext.currentTime);
+                    
+                    clickGain.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    clickGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+                    
+                    clickOsc.connect(clickGain);
+                    clickGain.connect(audioContext.destination);
+                    
+                    clickOsc.start();
+                    clickOsc.stop(audioContext.currentTime + 0.05);
+                    break;
+                    
+                case 'start':
+                    // Create start game sound
+                    const startOsc = audioContext.createOscillator();
+                    const startGain = audioContext.createGain();
+                    
+                    startOsc.type = 'sine';
+                    startOsc.frequency.setValueAtTime(440, audioContext.currentTime);
+                    startOsc.frequency.exponentialRampToValueAtTime(880, audioContext.currentTime + 0.3);
+                    
+                    startGain.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    startGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                    
+                    startOsc.connect(startGain);
+                    startGain.connect(audioContext.destination);
+                    
+                    startOsc.start();
+                    startOsc.stop(audioContext.currentTime + 0.3);
+                    break;
+            }
+        }
+        
+        function animate(currentTime) {
+            requestAnimationFrame(animate);
+            
+            if (!gameState.paused && gameState.started) {
+                // Update timer for timed mode
+                if (gameState.gameMode === 'timed') {
+                    if (gameState.lastTime === 0) gameState.lastTime = currentTime;
+                    const elapsed = (currentTime - gameState.lastTime) / 1000;
+                    gameState.timeLeft -= elapsed;
+                    gameState.lastTime = currentTime;
+                    
+                    // Update display (implement timer display if needed)
+                    if (gameState.timeLeft <= 0) {
+                        checkGameEnd();
+                    }
+                }
+                
+                // Update player paddle
+                const paddleSpeed = CONFIG.PADDLE_SPEED * gameState.sensitivityMultiplier;
+                if (controls.upPressed) {
+                    paddle.position.z -= paddleSpeed;
+                }
+                if (controls.downPressed) {
+                    paddle.position.z += paddleSpeed;
+                }
+                
+                // Keep paddle within bounds
+                paddle.position.z = Math.max(-CONFIG.TABLE_DEPTH/2 + CONFIG.PADDLE_DEPTH/2, 
+                    Math.min(CONFIG.TABLE_DEPTH/2 - CONFIG.PADDLE_DEPTH/2, paddle.position.z));
+                
+                // Update ball position
+                ball.position.add(ballVelocity);
+                
+                // Update AI
+                updateAI();
+                
+                // Handle collisions
+                handleCollisions();
+            }
+            
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
